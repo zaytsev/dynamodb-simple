@@ -1,0 +1,6 @@
+resolver: lts-12.1
+
+extra-deps:
+  - monad-supply-0.7
+
+allow-newer: true

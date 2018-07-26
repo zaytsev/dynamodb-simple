@@ -60,8 +60,8 @@ waitUntilTableActive name checkindex =
         descr <- getTableDescription name
         status <- maybe (throwM (DynamoException "Missing table status")) return (descr ^. D.tdTableStatus)
         let idxstatus = descr ^.. D.tdGlobalSecondaryIndexes . traverse . D.gsidIndexStatus . _Just
-        if | checkindex -> return (status /= D.Active || any (/= D.ISActive) idxstatus)
-           | otherwise -> return (status /= D.Active)
+        if | checkindex -> return (status /= D.TSActive || any (/= D.ISActive) idxstatus)
+           | otherwise -> return (status /= D.TSActive)
 
 -- | Delete specified indices from the database
 deleteIndices :: forall m. MonadAWS m => T.Text -> [T.Text] -> m ()
@@ -96,7 +96,7 @@ findInconsistentIdxes newidxes oldidxes =
     -- Assume the indices were created by this module and we want them exactly the same
     projectionOk newidx oldidx =
        -- Allow the index to have more fields than we know about
-        newprojtype == Just D.KeysOnly || (newprojtype == oldprojtype && newkeys `Set.isSubsetOf` oldkeys)
+        newprojtype == Just D.PTKeysOnly || (newprojtype == oldprojtype && newkeys `Set.isSubsetOf` oldkeys)
       where
           newprojtype = newidx ^? D.gsiProjection . D.pProjectionType . _Just
           oldprojtype = oldidx ^? D.gsidProjection . _Just . D.pProjectionType . _Just
@@ -115,7 +115,7 @@ findInconsistentLocIdxes newidxes oldidxes =
     keysOk newidx oldidx = Just (newidx ^. D.lsiKeySchema) == oldidx ^. D.lsidKeySchema
     -- Assume the indices were created by this module and we want them exactly the same
     projectionOk newidx oldidx =
-        newprojtype == Just D.KeysOnly || (newprojtype == oldprojtype && newkeys `Set.isSubsetOf` oldkeys)
+        newprojtype == Just D.PTKeysOnly || (newprojtype == oldprojtype && newkeys `Set.isSubsetOf` oldkeys)
       where
           newprojtype = newidx ^? D.lsiProjection . D.pProjectionType . _Just
           oldprojtype = oldidx ^? D.lsidProjection . _Just . D.pProjectionType . _Just
